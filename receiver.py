@@ -2,7 +2,7 @@ import socket
 import struct
 
 # Server Configuration
-HOST = '127.0.0.1'  # Listen on all interfaces
+HOST = ''  # Listen on all interfaces
 PORT = 12345      # Port to listen on
 
 # Create and bind the server socket
