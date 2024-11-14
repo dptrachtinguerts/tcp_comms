@@ -14,8 +14,10 @@ use_screen_grab = True
 def get_screen():
     screenshot = ImageGrab.grab(all_screens=True)
     screen = np.array(screenshot)
-    # frame = screen[2160:, 1927:, ::-1]
-    frame = screen[:, :1920, ::-1]
+    frame = screen[:2160, :3840, ::-1]
+    # frame = screen[2160:, 1927:, ::-1] # tela da direita
+    #frame = screen[2160:, 6:1926, ::-1] # tela da esquerda
+    # frame = screen[:, :1920, ::-1]
     print(f"[{time.time()}] ATENÇÃO: esse valor deve ser de 1920x1080 -> valor real: ", frame.shape)
     return frame
 
@@ -47,7 +49,7 @@ obstacles_signature, radar_img = radarext.radar_from_tpn_recording(frame)
 ### Network ###
 packet_size = 1024
 
-client_port = 20000
+client_port = 12345
 client_ip = "10.1.1.140"
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -69,22 +71,25 @@ while(True):
         server_socket.close()
         break
 
-    obstacles_signature, radar_img = radarext.radar_from_tpn_recording(frame)
+    # obstacles_signature, radar_img = radarext.radar_from_tpn_recording(frame)
+    obstacles_signature = frame
 
     cv2.imwrite(file_name, obstacles_signature)
 
     size = os.stat(file_name).st_size
-    server_socket.send(struct.pack('!Q', int(size)))
+    print(size)
+    # packed_data = struct.pack('!Q', int(size))
+    server_socket.sendall(str(size).ljust(8).encode())
 
-    # bytes_sent = 0
-    # with open(file_name, 'rb') as img_file:
-    #     data = img_file.read(packet_size if ((size - bytes_sent)//packet_size != 0) else (size - bytes_sent))
+    bytes_sent = 0
+    with open(file_name, 'rb') as img_file:
+        data = img_file.read(packet_size if ((size - bytes_sent)//packet_size != 0) else (size - bytes_sent))
         
-    #     while bytes_sent < size:
-    #         bytes_sent += server_socket.send(data)
-    #         data = img_file.read(packet_size if ((size - bytes_sent)//packet_size != 0) else (size - bytes_sent))
+        while bytes_sent < size:
+            bytes_sent += server_socket.send(data)
+            data = img_file.read(packet_size if ((size - bytes_sent)//packet_size != 0) else (size - bytes_sent))
 
-    #     img_file.close()
+        img_file.close()
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):
@@ -95,4 +100,4 @@ while(True):
         server_socket.close()
         break
 
-    time.sleep(3)
+    # time.sleep(3)
